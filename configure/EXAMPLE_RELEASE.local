@@ -1,0 +1,4 @@
+MOTOR=
+-include $(MOTOR)/configure/RELEASE
+# path to motorPiJena is needed to build the IOC inside motorPiJena, but outside motor
+MOTOR_PIJENA=

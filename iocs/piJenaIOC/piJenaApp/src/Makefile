@@ -5,6 +5,9 @@ include $(TOP)/configure/CONFIG
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #=============================
 
+# The following are used for debugging messages.
+#!USR_CXXFLAGS += -DDEBUG
+
 #=============================
 # Build the IOC application
 
@@ -16,10 +19,21 @@ DBD += piJena.dbd
 piJena_DBD += base.dbd
 
 # Include dbd files from all support applications:
-#piJena_DBD += xxx.dbd
+#ifdef ASYN
+piJena_DBD += asyn.dbd
+#endif
+piJena_DBD += motorSupport.dbd
+piJena_DBD += devPiJena.dbd
 
 # Add all the support libraries needed by this IOC
-#piJena_LIBS += xxx
+piJena_LIBS += piJena
+piJena_LIBS += motor
+#ifdef ASYN
+piJena_LIBS += asyn
+#endif
+#ifdef SNCSEQ
+piJena_LIBS += seq pv
+#endif
 
 # piJena_registerRecordDeviceDriver.cpp derives from piJena.dbd
 piJena_SRCS += piJena_registerRecordDeviceDriver.cpp
