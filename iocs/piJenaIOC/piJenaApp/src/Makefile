@@ -21,12 +21,13 @@ piJena_DBD += base.dbd
 # Include dbd files from all support applications:
 #ifdef ASYN
 piJena_DBD += asyn.dbd
+piJena_DBD += drvAsynSerialPort.dbd
 #endif
 piJena_DBD += motorSupport.dbd
-piJena_DBD += devPiJena.dbd
+piJena_DBD += devPIJena.dbd
 
 # Add all the support libraries needed by this IOC
-piJena_LIBS += piJena
+piJena_LIBS += PIJena
 piJena_LIBS += motor
 #ifdef ASYN
 piJena_LIBS += asyn
