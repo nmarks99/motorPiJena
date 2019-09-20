@@ -2,7 +2,7 @@
 FILENAME...	drvPIJEDS.cc
 USAGE...	Motor record driver level support for piezosystem jena
 	        GmbH & Co. E-516 motor controller.
-
+*/
 
 /*
  *      Original Author: Joe Sullivan
@@ -71,7 +71,7 @@ static inline void Debug(int level, const char *format, ...) {
 
 /* --- Local data. --- */
 int PIJEDS_num_cards = 0;
-static char *PIJEDS_axis[] = {"0", "1", "2", "3", "4", "5"};
+static const char *PIJEDS_axis[] = {"0", "1", "2", "3", "4", "5"};
 
 /* Command Information - used by set_status() */
 #define EDS_CMNDS_MAX 3
@@ -83,7 +83,7 @@ static char *PIJEDS_axis[] = {"0", "1", "2", "3", "4", "5"};
 #define READ_STATUS   "stat,#"   /* Read Motor Status */
 #define READ_SLEW     "sr,#"     /* Read Slew Velocity V/ms */
 
-static char *EDS_CMNDS[] = {READ_POS, READ_STATUS, READ_SLEW};
+static const char *EDS_CMNDS[] = {READ_POS, READ_STATUS, READ_SLEW};
 
 /* See fillCmndInfo() */
 static struct cmndInfo_struct {
@@ -100,7 +100,7 @@ static unsigned long fdbk_tolerance;       /* Divisor to shift position - for DO
 
 /*----------------functions-----------------*/
 static int recv_mess(int, char *, int);
-static RTN_STATUS send_mess(int, char const *, char *);
+static RTN_STATUS send_mess(int, const char *, const char *);
 static int set_status(int, int);
 static long report(int);
 static long init();
@@ -390,7 +390,7 @@ static int set_status(int card, int signal)
 	nodeptr->postmsgptr != 0)
     {
 	strcpy(buff, nodeptr->postmsgptr);
-	send_mess(card, buff, (char*) NULL);
+	send_mess(card, buff, NULL);
 	nodeptr->postmsgptr = NULL;
     }
 
@@ -404,7 +404,7 @@ exit:
 /* send a message to the PIJEDS board		     */
 /* send_mess()			                     */
 /*****************************************************/
-static RTN_STATUS send_mess(int card, char const *com, char *name)
+static RTN_STATUS send_mess(int card, const char *com, const char *name)
 {
     char local_buff[MAX_MSG_SIZE];
     char *pbuff;
@@ -612,7 +612,7 @@ static int motor_init()
 	    {
 	      online = false;
 	      /* Set Controller to ONLINE mode */
-	      send_mess(card_index, GET_IDENT, (char*) NULL);
+	      send_mess(card_index, GET_IDENT, NULL);
 	      if ((status = recv_mess(card_index, buff, 1)))
 		online = (strstr(buff,"DSM")) ? true : false;
 	      else
@@ -697,7 +697,7 @@ static void fillCmndInfo()
 {
   int index;
   struct cmndInfo_struct *pInfo = cmndInfo;
-  char **pCmndStr = EDS_CMNDS;
+  const char **pCmndStr = EDS_CMNDS;
 
   for (index = 0; index < EDS_CMNDS_MAX; index++, pInfo++, pCmndStr++)
     {
