@@ -5,6 +5,11 @@ include $(TOP)/configure/CONFIG
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #=============================
 
+# EPICS base sorts libraries, which prevents motorAcsMotion from overriding
+# motor/modules/motorAcsMotion.  The following lines fix this, in theory.
+PROD_DEPLIB_DIRS = $(foreach word, $(INSTALL_LIB)/ \
+    $(dir $($*_DEPLIBS) $(PROD_DEPLIBS)), $(abspath $(word)))
+
 # The following are used for debugging messages.
 #!USR_CXXFLAGS += -DDEBUG
 
@@ -19,19 +24,16 @@ DBD += piJena.dbd
 piJena_DBD += base.dbd
 
 # Include dbd files from all support applications:
-#ifdef ASYN
 piJena_DBD += asyn.dbd
 piJena_DBD += drvAsynSerialPort.dbd
-#endif
+piJena_DBD += drvAsynIPPort.dbd
 piJena_DBD += motorSupport.dbd
 piJena_DBD += devPIJena.dbd
 
 # Add all the support libraries needed by this IOC
 piJena_LIBS += PIJena
 piJena_LIBS += motor
-#ifdef ASYN
 piJena_LIBS += asyn
-#endif
 #ifdef SNCSEQ
 piJena_LIBS += seq pv
 #endif

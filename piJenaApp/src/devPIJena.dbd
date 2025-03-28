@@ -2,6 +2,7 @@
 device(motor,VME_IO,devPIJEDS,"PIJEDS")
 driver(drvPIJEDS)
 registrar(PIJEDSmotorRegister)
+registrar(PiJenaMotorRegister)
 variable(drvPIJEDSdebug)
 
 

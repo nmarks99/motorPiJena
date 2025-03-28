@@ -14,7 +14,8 @@ cd "${TOP}/iocBoot/${IOC}"
 dbLoadRecords("$(MOTOR)/db/motorUtil.db", "P=piJena:")
 
 ##
-< PIJEDS.cmd
+# < PIJEDS.cmd
+< PiJenaAsyn.cmd
 
 iocInit
 

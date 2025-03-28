@@ -13,6 +13,9 @@ LIBRARY_IOC = PIJena
 # piezosystem jena motor controller support
 SRCS += devPIJEDS.cc drvPIJEDS.cc PIJEDS_Register.cc
 
+# New asynMotorController version
+SRCS += piJenaAsyn.cpp
+
 PIJena_LIBS += motor asyn
 PIJena_LIBS += $(EPICS_BASE_IOC_LIBS)
 
