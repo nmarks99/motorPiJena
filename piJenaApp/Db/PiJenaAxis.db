@@ -6,3 +6,14 @@ record(longout, "$(P)$(M):DoneTolerance") {
     field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))DONE_TOLERANCE")
     field(SCAN, "Passive")
 }
+
+record(ao, "$(P)$(M):SlewRate") {
+    field(DTYP, "asynFloat64")
+    field(PINI, 1)
+    field(EGU, "V/ms")
+    field(VAL, "$(SLEW=10)")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))SLEW_RATE")
+    field(DRVL, "0")
+    field(DRVH, "500")
+    field(SCAN, "Passive")
+}

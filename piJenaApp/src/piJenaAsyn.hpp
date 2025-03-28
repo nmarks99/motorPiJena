@@ -3,6 +3,7 @@
 #include "asynMotorController.h"
 
 static constexpr char DONE_TOLERANCE_STRING[] = "DONE_TOLERANCE";
+static constexpr char SLEW_RATE_STRING[] = "SLEW_RATE";
 
 class epicsShareClass PiJenaMotorAxis : public asynMotorAxis {
   public:
@@ -17,7 +18,8 @@ class epicsShareClass PiJenaMotorAxis : public asynMotorAxis {
     int axisIndex_;
     bool moveStarted_ = false;
     int targetPos_;
-    int doneTolerance_ = 50;
+    int doneTolerance_ = 50; // nanometers
+    double slewRate_ = 10;      // volts/millisecond
 
     friend class PiJenaMotorController;
 };
@@ -47,9 +49,11 @@ class epicsShareClass PiJenaMotorController : public asynMotorController {
     PiJenaMotorAxis *getAxis(int axisNo);
 
     asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
+    asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
 
   protected:
     int doneToleranceIndex_;
+    int slewRateIndex_;
 
     friend class PiJenaMotorAxis;
 

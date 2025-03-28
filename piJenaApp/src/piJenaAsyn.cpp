@@ -33,11 +33,12 @@ PiJenaMotorController::PiJenaMotorController(const char *portName, const char *P
     static const char *functionName = "PiJenaMotorController::PiJenaMotorController";
 
     createParam(DONE_TOLERANCE_STRING, asynParamInt32, &doneToleranceIndex_);
+    createParam(SLEW_RATE_STRING, asynParamFloat64, &slewRateIndex_);
 
     // Connect to motor controller
     status = pasynOctetSyncIO->connect(PiJenaMotorPortName, 0, &pasynUserController_, NULL);
     if (status) {
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s: cannot connect to AKD2G controller\n",
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s: cannot connect to piezosystemjena controller\n",
                   functionName);
     }
 
@@ -126,7 +127,7 @@ asynStatus PiJenaMotorAxis::move(double position, int relative, double minVeloci
     const double pos_um = position / DRIVER_RESOLUTION;
 
     sprintf(pC_->outString_, "set,%d,%.3lf", axisNo_, pos_um);
-    pC_->writeController(); // controller won't reply
+    asyn_status = pC_->writeController(); // controller won't reply
     if (asyn_status) {
         callParamCallbacks();
         return asynError;
@@ -193,12 +194,42 @@ asynStatus PiJenaMotorController::writeInt32(asynUser *pasynUser, epicsInt32 val
 
     if (function == doneToleranceIndex_) {
         pAxis->doneTolerance_ = value;
-        printf("Using done tolerance %d nm\n", pAxis->doneTolerance_);
+        asynPrint(pAxis->pasynUser_, ASYN_TRACEIO_DRIVER, "Setting done tolerance to %d nm\n", pAxis->doneTolerance_);
     } else {
         // Call base class method
         asyn_status = asynMotorController::writeInt32(pasynUser, value);
     }
 
+    pAxis->callParamCallbacks();
+    return asyn_status;
+}
+
+
+asynStatus PiJenaMotorController::writeFloat64(asynUser *pasynUser, epicsFloat64 value) {
+
+    int function = pasynUser->reason;
+    PiJenaMotorAxis *pAxis;
+    asynStatus asyn_status = asynSuccess;
+
+    pAxis = getAxis(pasynUser);
+    if (!pAxis) {
+        return asynError;
+    }
+
+    if (function == slewRateIndex_) {
+        pAxis->slewRate_ = value;
+        asynPrint(pAxis->pasynUser_, ASYN_TRACEIO_DRIVER, "Setting slew rate to %lf V/ms\n", pAxis->slewRate_);
+        sprintf(this->outString_, "sr,%d,%lf", pAxis->axisNo_, value);
+        asyn_status = this->writeController();
+        if (asyn_status) {
+            goto skip;
+        }
+    } else {
+        asyn_status = asynMotorController::writeFloat64(pasynUser, value);
+    }
+
+skip:
+    // Do callbacks so higher layers see any changes
     pAxis->callParamCallbacks();
     return asyn_status;
 }
