@@ -1,0 +1,8 @@
+record(longout, "$(P)$(M):DoneTolerance") {
+    field(DTYP, "asynInt32")
+    field(PINI, 1)
+    field(EGU, "nm")
+    field(VAL, "$(TOL=50)")
+    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT=1))DONE_TOLERANCE")
+    field(SCAN, "Passive")
+}

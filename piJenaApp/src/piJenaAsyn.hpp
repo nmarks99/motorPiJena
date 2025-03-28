@@ -2,20 +2,22 @@
 #include "asynMotorAxis.h"
 #include "asynMotorController.h"
 
+static constexpr char DONE_TOLERANCE_STRING[] = "DONE_TOLERANCE";
+
 class epicsShareClass PiJenaMotorAxis : public asynMotorAxis {
   public:
     PiJenaMotorAxis(class PiJenaMotorController *pC, int axisNo);
     void report(FILE *fp, int level);
     asynStatus stop(double acceleration);
     asynStatus poll(bool *moving);
-    asynStatus setClosedLoop(bool closedLoop);
     asynStatus move(double position, int relative, double minVelocity, double maxVelocity, double acceleration);
 
   private:
     PiJenaMotorController *pC_;
     int axisIndex_;
     bool moveStarted_ = false;
-    int targetPos_; // nanometers
+    int targetPos_;
+    int doneTolerance_ = 50;
 
     friend class PiJenaMotorController;
 };
@@ -44,8 +46,11 @@ class epicsShareClass PiJenaMotorController : public asynMotorController {
     /// \returns NULL if the axis number is invalid
     PiJenaMotorAxis *getAxis(int axisNo);
 
-    // protected:
-    // integer asyn param indices defined here
+    asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
+
+  protected:
+    int doneToleranceIndex_;
 
     friend class PiJenaMotorAxis;
+
 };

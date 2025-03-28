@@ -9,17 +9,13 @@
 
 constexpr int NUM_PARAMS = 0;
 
-// actual resolution of sensor?
 // MRES -> EGU
 // 1.0  -> nanometers
 // 1e-3 -> micrometers
 // 1e-6 -> millimeters
 // 1e-9 -> meters
-
-// controller reports in microns, but has nanometer resolution (I think)
+// controller reports in microns, this driver will operate in nanometer "steps"
 constexpr double DRIVER_RESOLUTION = 1000;
-constexpr int DONE_TOLERANCE = 50; // done when within 50 microns of target
-constexpr int CMD_BUFFER_SIZE = 30;
 
 PiJenaMotorController::PiJenaMotorController(const char *portName, const char *PiJenaMotorPortName,
                                            int numAxes, double movingPollPeriod,
@@ -35,6 +31,8 @@ PiJenaMotorController::PiJenaMotorController(const char *portName, const char *P
     int axis;
     PiJenaMotorAxis *pAxis;
     static const char *functionName = "PiJenaMotorController::PiJenaMotorController";
+
+    createParam(DONE_TOLERANCE_STRING, asynParamInt32, &doneToleranceIndex_);
 
     // Connect to motor controller
     status = pasynOctetSyncIO->connect(PiJenaMotorPortName, 0, &pasynUserController_, NULL);
@@ -90,6 +88,15 @@ PiJenaMotorAxis::PiJenaMotorAxis(PiJenaMotorController *pC, int axisNo)
     setIntegerParam(pC->motorStatusHasEncoder_, 1);
     setIntegerParam(pC->motorStatusGainSupport_, 1);
 
+    // Only closed loop is supported through EPICS right now.
+    sprintf(pC_->outString_, "cl,%d,1", axisNo_);
+    asynStatus asyn_status = pC_->writeController();
+    if (asyn_status) {
+        asynPrint(pasynUser_, ASYN_TRACE_ERROR, "Error setting closed loop for axis %d\n", axisIndex_);
+    } else {
+        asynPrint(pasynUser_, ASYN_TRACE_ERROR, "Successfully set axis %d to closed loop mode\n", axisIndex_);
+    }
+
     callParamCallbacks();
 }
 
@@ -105,6 +112,9 @@ asynStatus PiJenaMotorAxis::stop(double acceleration) {
 
     asynStatus asyn_status = asynSuccess;
 
+    // TODO: should we do something here?
+    // controller has no stop command
+
     callParamCallbacks();
     return asyn_status;
 }
@@ -113,11 +123,9 @@ asynStatus PiJenaMotorAxis::move(double position, int relative, double minVeloci
                                 double maxVelocity, double acceleration) {
     asynStatus asyn_status = asynStatus::asynSuccess;
    
-    double pos_um = position / DRIVER_RESOLUTION;
+    const double pos_um = position / DRIVER_RESOLUTION;
 
-    // printf("Move to %lf microns requested\n", pos_um);
     sprintf(pC_->outString_, "set,%d,%.3lf", axisNo_, pos_um);
-    // printf("Writing '%s'\n", pC_->outString_);
     pC_->writeController(); // controller won't reply
     if (asyn_status) {
         callParamCallbacks();
@@ -126,7 +134,6 @@ asynStatus PiJenaMotorAxis::move(double position, int relative, double minVeloci
 
     this->moveStarted_ = true;
     this->targetPos_ = position; // nanometers
-
     
     callParamCallbacks();
     return asyn_status;
@@ -141,9 +148,6 @@ asynStatus PiJenaMotorAxis::poll(bool *moving) {
     sprintf(pC_->outString_, "mess,%d", axisNo_);
     asyn_status = pC_->writeReadController();
 
-    // printf("Write '%s'\n", pC_->outString_);
-    // printf("Read '%s'\n", pC_->inString_);
-
     std::string instr(pC_->inString_);
     last_comma_ind = instr.rfind(",");
     if (last_comma_ind != std::string::npos) {
@@ -156,14 +160,11 @@ asynStatus PiJenaMotorAxis::poll(bool *moving) {
         asyn_status = asynError;
     }
 
+    // controller has no "stop" command. Motion is considered complete
+    // once the readback is within some tolerance of the target position.
+    // User can change tolerance through asyn parameter.
     if (moveStarted_) {
-        
-        // if still moving:
-        // printf("Current position = %d nm\n", position_nm);
-        // printf("Target position = %d nm\n", this->targetPos_);
-        // printf("delta pos = %d\n\n", std::abs(position_nm - this->targetPos_));
-        if (std::abs(position_nm - this->targetPos_) < DONE_TOLERANCE) {
-            printf("Move complete\n");
+        if (std::abs(position_nm - this->targetPos_) < this->doneTolerance_) {
             moveStarted_ = false;
             *moving = false;
         } else {
@@ -179,12 +180,29 @@ asynStatus PiJenaMotorAxis::poll(bool *moving) {
     return asyn_status;
 }
 
-asynStatus PiJenaMotorAxis::setClosedLoop(bool closedLoop) {
-    asynStatus asyn_status = asynSuccess;
+asynStatus PiJenaMotorController::writeInt32(asynUser *pasynUser, epicsInt32 value) {
 
-    callParamCallbacks();
+    asynStatus asyn_status = asynSuccess;
+    int function = pasynUser->reason;
+    PiJenaMotorAxis *pAxis;
+
+    pAxis = getAxis(pasynUser);
+    if (!pAxis) {
+        return asynError;
+    }
+
+    if (function == doneToleranceIndex_) {
+        pAxis->doneTolerance_ = value;
+        printf("Using done tolerance %d nm\n", pAxis->doneTolerance_);
+    } else {
+        // Call base class method
+        asyn_status = asynMotorController::writeInt32(pasynUser, value);
+    }
+
+    pAxis->callParamCallbacks();
     return asyn_status;
 }
+
 
 // ==================
 // iosch registration
